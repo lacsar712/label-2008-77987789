@@ -32,3 +32,34 @@ INSERT INTO notices (title, content, author, priority, status, publish_date) VAL
 ('用户调查问卷', '为了更好地改进我们的服务，诚邀您参与用户满意度调查，您的意见对我们非常重要。', '客服部', 'low', 'published', DATE_SUB(NOW(), INTERVAL 5 DAY)),
 ('培训课程通知', '本月将举办系统使用培训课程，欢迎新用户报名参加，详情请查看培训中心。', '培训部', 'medium', 'published', DATE_SUB(NOW(), INTERVAL 7 DAY)),
 ('版本更新说明', '系统已更新至v2.0版本，新增了数据导出、批量操作等功能，提升了系统性能。', '技术部', 'medium', 'published', DATE_SUB(NOW(), INTERVAL 10 DAY));
+
+-- 创建访客反馈表
+CREATE TABLE IF NOT EXISTS feedbacks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ticket_no VARCHAR(8) NOT NULL UNIQUE COMMENT '工单号',
+    type ENUM('bug', 'feature', 'complaint', 'suggestion', 'other') NOT NULL DEFAULT 'other' COMMENT '反馈类型',
+    title VARCHAR(255) NOT NULL COMMENT '反馈标题',
+    description TEXT NOT NULL COMMENT '反馈描述',
+    contact VARCHAR(255) DEFAULT '' COMMENT '联系方式',
+    screenshots TEXT DEFAULT NULL COMMENT '截图URL列表，JSON数组',
+    status ENUM('pending', 'processing', 'resolved', 'closed') NOT NULL DEFAULT 'pending' COMMENT '状态',
+    internal_note TEXT DEFAULT NULL COMMENT '内部备注',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后处理时间',
+    INDEX idx_ticket_no (ticket_no),
+    INDEX idx_status (status),
+    INDEX idx_type (type),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建反馈状态变更时间线表
+CREATE TABLE IF NOT EXISTS feedback_timeline (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    feedback_id INT NOT NULL COMMENT '反馈ID',
+    from_status VARCHAR(20) DEFAULT NULL COMMENT '变更前状态',
+    to_status VARCHAR(20) NOT NULL COMMENT '变更后状态',
+    note TEXT DEFAULT NULL COMMENT '备注',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '变更时间',
+    INDEX idx_feedback_id (feedback_id),
+    FOREIGN KEY (feedback_id) REFERENCES feedbacks(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

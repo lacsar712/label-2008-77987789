@@ -19,5 +19,6 @@ COPY ./www /var/www/html
 # 设置权限
 RUN chown -R www-data:www-data /var/www/html
 RUN chmod -R 755 /var/www/html
+RUN mkdir -p /var/www/html/uploads/feedback && chown -R www-data:www-data /var/www/html/uploads
 
 EXPOSE 80
