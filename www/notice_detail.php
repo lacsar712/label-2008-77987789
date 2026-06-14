@@ -51,12 +51,55 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
         .detail-header {
             padding: var(--spacing-2xl);
             border-bottom: 1px solid var(--border-color);
+            position: relative;
         }
         .detail-header h1 {
             font-size: 1.75rem;
             color: var(--text-primary);
             margin-bottom: var(--spacing-md);
             line-height: 1.4;
+            padding-right: 180px;
+        }
+        .detail-actions {
+            position: absolute;
+            top: var(--spacing-2xl);
+            right: var(--spacing-2xl);
+            display: flex;
+            gap: var(--spacing-sm);
+            z-index: 10;
+        }
+        .detail-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .detail-action-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: rgba(59,130,246,0.05);
+        }
+        .detail-action-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+        .detail-action-btn.primary {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: transparent;
+        }
+        .detail-action-btn.primary:hover {
+            opacity: 0.9;
+            background: var(--gradient-primary);
         }
         .detail-meta {
             display: flex;
@@ -406,6 +449,26 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
             .tab-content {
                 padding: var(--spacing-lg);
             }
+            .detail-header h1 {
+                padding-right: 0;
+                font-size: 1.375rem;
+                margin-top: 52px;
+            }
+            .detail-actions {
+                top: var(--spacing-md);
+                right: var(--spacing-md);
+            }
+            .detail-action-btn {
+                padding: 6px 10px;
+                font-size: 0.8125rem;
+            }
+            .detail-action-btn span {
+                display: none;
+            }
+            .detail-action-btn svg {
+                width: 18px;
+                height: 18px;
+            }
         }
     </style>
 </head>
@@ -426,6 +489,7 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
                 <li><a href="qa_center.php">问答中心</a></li>
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_query.php">工单查询</a></li>
+                <li><a href="print_template_admin.php">打印模板</a></li>
             </ul>
         </div>
     </nav>
@@ -441,6 +505,16 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
 
             <div class="detail-container">
                 <div class="detail-header">
+                    <div class="detail-actions">
+                        <a href="print_preview.php?notice_id=<?php echo $notice_id; ?>" target="_blank" class="detail-action-btn" title="打印预览">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="6 9 6 2 18 2 18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="14" width="12" height="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <span>打印</span>
+                        </a>
+                        <a href="print_preview.php?notice_id=<?php echo $notice_id; ?>" target="_blank" class="detail-action-btn primary" title="下载PDF">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <span>PDF</span>
+                        </a>
+                    </div>
                     <h1><?php echo htmlspecialchars($notice['title']); ?></h1>
                     <div class="detail-meta">
                         <span class="detail-meta-item">

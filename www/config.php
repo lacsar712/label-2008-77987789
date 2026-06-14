@@ -116,6 +116,37 @@ function getUserIdentifier() {
     return md5($ip . '|' . $ua);
 }
 
+function ensurePrintTemplates() {
+    $conn = getConnection();
+    $conn->query("CREATE TABLE IF NOT EXISTS print_templates (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        header_text VARCHAR(255) DEFAULT '',
+        footer_text VARCHAR(255) DEFAULT '',
+        logo_url VARCHAR(500) DEFAULT '',
+        style_json TEXT DEFAULT NULL,
+        is_default TINYINT(1) DEFAULT 0,
+        template_type ENUM('minimal', 'official', 'card') DEFAULT 'minimal',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_name (name),
+        INDEX idx_is_default (is_default)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $result = $conn->query("SELECT COUNT(*) as cnt FROM print_templates");
+    $row = $result->fetch_assoc();
+    if ($row['cnt'] == 0) {
+        $defaultStyle1 = json_encode(['fontFamily' => 'Noto Sans SC, sans-serif', 'fontSize' => '14px', 'textColor' => '#333', 'backgroundColor' => '#fff', 'borderColor' => '#e5e7eb', 'primaryColor' => '#3b82f6', 'headerBgColor' => '#f9fafb', 'footerBgColor' => '#f9fafb']);
+        $defaultStyle2 = json_encode(['fontFamily' => 'SimSun, Noto Sans SC, sans-serif', 'fontSize' => '16px', 'textColor' => '#111', 'backgroundColor' => '#fff', 'borderColor' => '#333', 'primaryColor' => '#1e40af', 'headerBgColor' => '#fff', 'footerBgColor' => '#fff', 'titleFontSize' => '28px', 'titleAlign' => 'center', 'borderStyle' => 'double']);
+        $defaultStyle3 = json_encode(['fontFamily' => 'Noto Sans SC, sans-serif', 'fontSize' => '14px', 'textColor' => '#374151', 'backgroundColor' => '#f3f4f6', 'cardBgColor' => '#fff', 'borderRadius' => '12px', 'borderColor' => '#e5e7eb', 'primaryColor' => '#8b5cf6', 'shadow' => '0 4px 6px -1px rgba(0,0,0,0.1)', 'padding' => '24px']);
+        $conn->query("INSERT INTO print_templates (name, header_text, footer_text, logo_url, style_json, is_default, template_type) VALUES
+            ('极简风', '公告信息管理系统', '© 2024 公告信息管理系统. All rights reserved.', '', '" . $conn->real_escape_string($defaultStyle1) . "', 1, 'minimal'),
+            ('正式公文', '公 告', '发布单位：公告信息管理系统', '', '" . $conn->real_escape_string($defaultStyle2) . "', 0, 'official'),
+            ('卡片风', '', '感谢您的关注', '', '" . $conn->real_escape_string($defaultStyle3) . "', 0, 'card')");
+    }
+    closeConnection($conn);
+}
+
 function jsonResponse($data, $code = 200) {
     http_response_code($code);
     header('Content-Type: application/json; charset=UTF-8');

@@ -105,3 +105,25 @@ CREATE TABLE IF NOT EXISTS answer_likes (
     UNIQUE KEY uk_answer_user (answer_id, user_identifier),
     FOREIGN KEY (answer_id) REFERENCES answers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建打印模板表
+CREATE TABLE IF NOT EXISTS print_templates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL COMMENT '模板名称',
+    header_text VARCHAR(255) DEFAULT '' COMMENT '页眉文字',
+    footer_text VARCHAR(255) DEFAULT '' COMMENT '页脚文字',
+    logo_url VARCHAR(500) DEFAULT '' COMMENT 'Logo URL',
+    style_json TEXT DEFAULT NULL COMMENT '样式配置JSON',
+    is_default TINYINT(1) DEFAULT 0 COMMENT '是否默认模板：0否，1是',
+    template_type ENUM('minimal', 'official', 'card') DEFAULT 'minimal' COMMENT '模板类型：minimal极简风, official正式公文, card卡片风',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_name (name),
+    INDEX idx_is_default (is_default)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 插入默认打印模板
+INSERT INTO print_templates (name, header_text, footer_text, logo_url, style_json, is_default, template_type) VALUES
+('极简风', '公告信息管理系统', '© 2024 公告信息管理系统. All rights reserved.', '', '{"fontFamily":"Noto Sans SC, sans-serif","fontSize":"14px","textColor":"#333","backgroundColor":"#fff","borderColor":"#e5e7eb","primaryColor":"#3b82f6","headerBgColor":"#f9fafb","footerBgColor":"#f9fafb"}', 1, 'minimal'),
+('正式公文', '公 告', '发布单位：公告信息管理系统', '', '{"fontFamily":"SimSun, Noto Sans SC, sans-serif","fontSize":"16px","textColor":"#111","backgroundColor":"#fff","borderColor":"#333","primaryColor":"#1e40af","headerBgColor":"#fff","footerBgColor":"#fff","titleFontSize":"28px","titleAlign":"center","borderStyle":"double"}', 0, 'official'),
+('卡片风', '', '感谢您的关注', '', '{"fontFamily":"Noto Sans SC, sans-serif","fontSize":"14px","textColor":"#374151","backgroundColor":"#f3f4f6","cardBgColor":"#fff","borderRadius":"12px","borderColor":"#e5e7eb","primaryColor":"#8b5cf6","shadow":"0 4px 6px -1px rgba(0,0,0,0.1)","padding":"24px"}', 0, 'card');
