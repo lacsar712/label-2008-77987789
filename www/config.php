@@ -68,4 +68,58 @@ function ensureFeedbackTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     closeConnection($conn);
 }
+
+function ensureQATables() {
+    $conn = getConnection();
+    $conn->query("CREATE TABLE IF NOT EXISTS questions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        notice_id INT NOT NULL,
+        asker VARCHAR(100) NOT NULL,
+        content TEXT NOT NULL,
+        status ENUM('open', 'resolved') DEFAULT 'open',
+        best_answer_id INT DEFAULT NULL,
+        views INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_notice_id (notice_id),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (notice_id) REFERENCES notices(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $conn->query("CREATE TABLE IF NOT EXISTS answers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        question_id INT NOT NULL,
+        answerer VARCHAR(100) NOT NULL,
+        content TEXT NOT NULL,
+        likes INT DEFAULT 0,
+        is_best TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_question_id (question_id),
+        INDEX idx_is_best (is_best),
+        FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $conn->query("CREATE TABLE IF NOT EXISTS answer_likes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        answer_id INT NOT NULL,
+        user_identifier VARCHAR(255) NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_answer_user (answer_id, user_identifier),
+        FOREIGN KEY (answer_id) REFERENCES answers(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    closeConnection($conn);
+}
+
+function getUserIdentifier() {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
+    return md5($ip . '|' . $ua);
+}
+
+function jsonResponse($data, $code = 200) {
+    http_response_code($code);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
+}
 ?>

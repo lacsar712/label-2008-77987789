@@ -109,6 +109,7 @@
                 <li><a href="index.php">首页</a></li>
                 <li><a href="add_notice.php">添加公告</a></li>
                 <li><a href="search_notice.php" class="active">查询公告</a></li>
+                <li><a href="qa_center.php">问答中心</a></li>
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_query.php">工单查询</a></li>
             </ul>
@@ -205,7 +206,7 @@
                         <tr>
                             <td><?php echo $row['id']; ?></td>
                             <td class="notice-title-cell">
-                                <?php echo htmlspecialchars($row['title']); ?>
+                                <a href="notice_detail.php?id=<?php echo $row['id']; ?>" style="color:var(--text-primary);font-weight:500;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--text-primary)'"><?php echo htmlspecialchars($row['title']); ?></a>
                             </td>
                             <td class="notice-content-cell">
                                 <?php 

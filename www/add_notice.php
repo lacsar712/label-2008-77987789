@@ -87,6 +87,7 @@
                 <li><a href="index.php">首页</a></li>
                 <li><a href="add_notice.php" class="active">添加公告</a></li>
                 <li><a href="search_notice.php">查询公告</a></li>
+                <li><a href="qa_center.php">问答中心</a></li>
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_query.php">工单查询</a></li>
             </ul>

@@ -63,3 +63,45 @@ CREATE TABLE IF NOT EXISTS feedback_timeline (
     INDEX idx_feedback_id (feedback_id),
     FOREIGN KEY (feedback_id) REFERENCES feedbacks(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建问题表
+CREATE TABLE IF NOT EXISTS questions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    notice_id INT NOT NULL COMMENT '公告ID',
+    asker VARCHAR(100) NOT NULL COMMENT '提问者',
+    content TEXT NOT NULL COMMENT '提问内容',
+    status ENUM('open', 'resolved') DEFAULT 'open' COMMENT '状态：open未解答，resolved已解答',
+    best_answer_id INT DEFAULT NULL COMMENT '最佳答案ID',
+    views INT DEFAULT 0 COMMENT '浏览次数',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '提问时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_notice_id (notice_id),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (notice_id) REFERENCES notices(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建回答表
+CREATE TABLE IF NOT EXISTS answers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    question_id INT NOT NULL COMMENT '问题ID',
+    answerer VARCHAR(100) NOT NULL COMMENT '回答者',
+    content TEXT NOT NULL COMMENT '回答内容',
+    likes INT DEFAULT 0 COMMENT '点赞数',
+    is_best TINYINT(1) DEFAULT 0 COMMENT '是否最佳答案：0否，1是',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '回答时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_question_id (question_id),
+    INDEX idx_is_best (is_best),
+    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 创建回答点赞记录表（防止重复点赞）
+CREATE TABLE IF NOT EXISTS answer_likes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    answer_id INT NOT NULL COMMENT '回答ID',
+    user_identifier VARCHAR(255) NOT NULL COMMENT '用户标识（IP+UA哈希）',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
+    UNIQUE KEY uk_answer_user (answer_id, user_identifier),
+    FOREIGN KEY (answer_id) REFERENCES answers(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
