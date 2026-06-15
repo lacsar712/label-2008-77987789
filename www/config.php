@@ -220,11 +220,85 @@ function ensureSubscriptionTables() {
         $conn->query("ALTER TABLE notices ADD INDEX idx_category (category)");
     }
 
+    $result = $conn->query("SHOW COLUMNS FROM notices LIKE 'survey_id'");
+    if ($result && $result->num_rows == 0) {
+        $conn->query("ALTER TABLE notices ADD COLUMN survey_id INT DEFAULT NULL COMMENT '关联问卷ID' AFTER status");
+        $conn->query("ALTER TABLE notices ADD INDEX idx_survey_id (survey_id)");
+    }
+
+    closeConnection($conn);
+}
+
+function ensureSurveyTables() {
+    $conn = getConnection();
+
+    $conn->query("CREATE TABLE IF NOT EXISTS surveys (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT DEFAULT NULL,
+        start_time DATETIME DEFAULT NULL,
+        end_time DATETIME DEFAULT NULL,
+        is_enabled TINYINT(1) DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_is_enabled (is_enabled),
+        INDEX idx_created_at (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS survey_questions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        survey_id INT NOT NULL,
+        question_text TEXT NOT NULL,
+        question_type ENUM('single', 'multiple', 'text') NOT NULL,
+        sort_order INT DEFAULT 0,
+        is_required TINYINT(1) DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_survey_id (survey_id),
+        INDEX idx_sort_order (sort_order),
+        FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS survey_options (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        question_id INT NOT NULL,
+        option_text VARCHAR(500) NOT NULL,
+        sort_order INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_question_id (question_id),
+        INDEX idx_sort_order (sort_order),
+        FOREIGN KEY (question_id) REFERENCES survey_questions(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS survey_answers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        survey_id INT NOT NULL,
+        question_id INT NOT NULL,
+        visitor_id VARCHAR(255) NOT NULL,
+        option_id INT DEFAULT NULL,
+        answer_text TEXT DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_survey_id (survey_id),
+        INDEX idx_question_id (question_id),
+        INDEX idx_visitor_id (visitor_id),
+        INDEX idx_created_at (created_at),
+        UNIQUE KEY uk_survey_visitor_question (survey_id, visitor_id, question_id),
+        FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE,
+        FOREIGN KEY (question_id) REFERENCES survey_questions(id) ON DELETE CASCADE,
+        FOREIGN KEY (option_id) REFERENCES survey_options(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $result = $conn->query("SHOW COLUMNS FROM notices LIKE 'survey_id'");
+    if ($result && $result->num_rows == 0) {
+        $conn->query("ALTER TABLE notices ADD COLUMN survey_id INT DEFAULT NULL COMMENT '关联问卷ID' AFTER status");
+        $conn->query("ALTER TABLE notices ADD INDEX idx_survey_id (survey_id)");
+    }
+
     closeConnection($conn);
 }
 
 function getBackupTables() {
-    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records', 'subscriptions', 'push_records'];
+    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records', 'subscriptions', 'push_records', 'surveys', 'survey_questions', 'survey_options', 'survey_answers'];
 }
 
 function matchSubscription($sub, $notice) {

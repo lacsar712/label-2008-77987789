@@ -363,6 +363,8 @@
                 <li><a href="qa_center.php">问答中心</a></li>
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_admin.php">反馈管理</a></li>
+                <li><a href="survey_admin.php">问卷管理</a></li>
+                <li><a href="survey_results.php">问卷结果</a></li>
                 <li><a href="subscription_admin.php">订阅管理</a></li>
                 <li><a href="push_records.php">推送记录</a></li>
                 <li><a href="system_backup.php" class="active">系统备份</a></li>

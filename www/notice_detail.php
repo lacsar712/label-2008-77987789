@@ -2,6 +2,7 @@
 header('Content-Type: text/html; charset=UTF-8');
 require_once 'config.php';
 ensureQATables();
+ensureSurveyTables();
 
 $notice_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 if ($notice_id <= 0) {
@@ -26,6 +27,8 @@ $update_stmt = $conn->prepare("UPDATE notices SET views = views + 1 WHERE id = ?
 $update_stmt->bind_param("i", $notice_id);
 $update_stmt->execute();
 $update_stmt->close();
+
+$has_survey = !empty($notice['survey_id']);
 closeConnection($conn);
 
 $priority_class = 'priority-' . $notice['priority'];
@@ -440,6 +443,193 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .survey-section {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .survey-container {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+        }
+        .survey-header {
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .survey-title {
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+            font-weight: 600;
+        }
+        .survey-description {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            margin-bottom: var(--spacing-md);
+            line-height: 1.7;
+        }
+        .survey-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+        .survey-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .survey-meta-item svg {
+            width: 14px;
+            height: 14px;
+        }
+        .survey-question {
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-xl);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .survey-question:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .question-text {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-md);
+            font-weight: 500;
+            line-height: 1.6;
+        }
+        .question-text .required {
+            color: var(--error-color);
+            margin-left: 4px;
+        }
+        .question-type-badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 500;
+            margin-right: var(--spacing-sm);
+            vertical-align: middle;
+        }
+        .question-type-badge.single {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+        .question-type-badge.multiple {
+            background: rgba(168, 85, 247, 0.2);
+            color: #c084fc;
+        }
+        .question-type-badge.text {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+        .option-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .option-item:hover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.05);
+        }
+        .option-item.selected {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        .option-item input[type="radio"],
+        .option-item input[type="checkbox"] {
+            margin-top: 3px;
+            flex-shrink: 0;
+            accent-color: var(--primary-color);
+        }
+        .option-text {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            line-height: 1.5;
+            flex: 1;
+        }
+        .text-answer-input {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            font-size: 0.9375rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+            transition: all 0.2s ease;
+        }
+        .text-answer-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .survey-submit-area {
+            margin-top: var(--spacing-xl);
+            text-align: center;
+        }
+        .survey-submit-area .btn {
+            min-width: 150px;
+        }
+        .survey-success {
+            text-align: center;
+            padding: var(--spacing-2xl);
+        }
+        .survey-success-icon {
+            width: 64px;
+            height: 64px;
+            color: var(--success-color);
+            margin-bottom: var(--spacing-md);
+        }
+        .survey-success h3 {
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+        }
+        .survey-success p {
+            color: var(--text-muted);
+            font-size: 0.9375rem;
+        }
+        .survey-disabled {
+            text-align: center;
+            padding: var(--spacing-2xl);
+            color: var(--text-muted);
+        }
+        .survey-disabled svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.5;
+        }
+        .survey-empty {
+            text-align: center;
+            padding: var(--spacing-2xl);
+            color: var(--text-muted);
+        }
+        .survey-empty svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.5;
+        }
         @media (max-width: 768px) {
             .ask-form-row,
             .answer-form-row {
@@ -469,6 +659,9 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
                 width: 18px;
                 height: 18px;
             }
+            .survey-container {
+                padding: var(--spacing-lg);
+            }
         }
     </style>
 </head>
@@ -490,6 +683,8 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_query.php">工单查询</a></li>
                 <li><a href="feedback_admin.php">反馈管理</a></li>
+                <li><a href="survey_admin.php">问卷管理</a></li>
+                <li><a href="survey_results.php">问卷结果</a></li>
                 <li><a href="print_template_admin.php">打印模板</a></li>
                 <li><a href="subscription_admin.php">订阅管理</a></li>
                 <li><a href="push_records.php">推送记录</a></li>
@@ -549,6 +744,9 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
                 <div class="tabs">
                     <div class="tab-item active" data-tab="content">公告内容</div>
                     <div class="tab-item" data-tab="qa">问答讨论</div>
+                    <?php if ($has_survey): ?>
+                        <div class="tab-item" data-tab="survey">问卷调查</div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="tab-content active" id="tab-content">
@@ -580,6 +778,14 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
                         <div class="qa-pagination" id="qaPagination"></div>
                     </div>
                 </div>
+
+                <?php if ($has_survey): ?>
+                    <div class="tab-content" id="tab-survey">
+                        <div class="survey-section">
+                            <div id="surveyContainer"></div>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -593,9 +799,14 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
     <script>
     (function() {
         var NOTICE_ID = <?php echo $notice_id; ?>;
+        var SURVEY_ID = <?php echo intval($notice['survey_id'] ?? 0); ?>;
+        var HAS_SURVEY = <?php echo $has_survey ? 'true' : 'false'; ?>;
         var currentPage = 1;
         var totalPages = 1;
         var loadedAnswers = {};
+        var surveyData = null;
+        var surveyAnswers = {};
+        var isSurveySubmitted = false;
 
         var tabItems = document.querySelectorAll('.tab-item');
         tabItems.forEach(function(tab) {
@@ -609,10 +820,256 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
                     loadQuestions();
                     window.qaLoaded = true;
                 }
+                if (target === 'survey' && HAS_SURVEY && !window.surveyLoaded) {
+                    loadSurvey();
+                    window.surveyLoaded = true;
+                }
             });
         });
 
         document.getElementById('submitQuestionBtn').addEventListener('click', submitQuestion);
+
+        function loadSurvey() {
+            var container = document.getElementById('surveyContainer');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>加载问卷中...</p></div>';
+
+            fetch('api_survey_submit.php?action=check_submitted&survey_id=' + SURVEY_ID)
+                .then(function(res) { return res.json(); })
+                .then(function(checkData) {
+                    if (checkData.success && checkData.data.submitted) {
+                        isSurveySubmitted = true;
+                        renderSurveySubmitted();
+                        return;
+                    }
+                    return fetch('api_survey_submit.php?action=detail_for_answer&survey_id=' + SURVEY_ID)
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            if (data.success) {
+                                surveyData = data.data;
+                                renderSurveyForm();
+                            } else {
+                                renderSurveyError(data.message || '问卷加载失败');
+                            }
+                        });
+                })
+                .catch(function() {
+                    renderSurveyError('网络错误，请稍后重试');
+                });
+        }
+
+        function renderSurveyError(message) {
+            var container = document.getElementById('surveyContainer');
+            container.innerHTML = '<div class="survey-disabled"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 9V13M12 17H12.01M10.29 3.86L1.82 18C1.58 18.42 1.58 18.94 1.82 19.36C2.06 19.78 2.52 20.03 3 20.03H21C21.48 20.03 21.94 19.78 22.18 19.36C22.42 18.94 22.42 18.42 22.18 18L13.71 3.86C13.47 3.44 13.01 3.19 12.53 3.19C12.05 3.19 11.59 3.44 11.35 3.86Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><p>' + message + '</p></div>';
+        }
+
+        function renderSurveySubmitted() {
+            var container = document.getElementById('surveyContainer');
+            container.innerHTML = '<div class="survey-success"><svg class="survey-success-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>感谢您的参与！</h3><p>您已经提交过该问卷，每位用户仅能提交一次。</p></div>';
+        }
+
+        function renderSurveyForm() {
+            var container = document.getElementById('surveyContainer');
+            var survey = surveyData.survey;
+            var questions = surveyData.questions;
+
+            if (!survey.is_enabled) {
+                container.innerHTML = '<div class="survey-disabled"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 15V17M12 7V13M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><p>该问卷已关闭，无法作答。</p></div>';
+                return;
+            }
+
+            var now = new Date();
+            if (survey.start_time && new Date(survey.start_time) > now) {
+                container.innerHTML = '<div class="survey-disabled"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 8V12L15 14M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><p>该问卷尚未开始，开始时间：' + survey.start_time + '</p></div>';
+                return;
+            }
+            if (survey.end_time && new Date(survey.end_time) < now) {
+                container.innerHTML = '<div class="survey-disabled"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 8V12L15 14M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><p>该问卷已结束，结束时间：' + survey.end_time + '</p></div>';
+                return;
+            }
+
+            if (!questions || questions.length === 0) {
+                container.innerHTML = '<div class="survey-empty"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 6.10457 9.89543 7 11 7H13C14.1046 7 15 6.10457 15 5M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5M12 12H12.01M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><p>该问卷暂无题目</p></div>';
+                return;
+            }
+
+            var html = '<div class="survey-container">';
+            html += '  <div class="survey-header">';
+            html += '    <h2 class="survey-title">' + htmlEscape(survey.title) + '</h2>';
+            if (survey.description) {
+                html += '    <p class="survey-description">' + htmlEscape(survey.description) + '</p>';
+            }
+            html += '    <div class="survey-meta">';
+            html += '      <span class="survey-meta-item">';
+            html += '        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 6.10457 9.89543 7 11 7H13C14.1046 7 15 6.10457 15 5M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            html += '        共 ' + questions.length + ' 题';
+            html += '      </span>';
+            if (survey.start_time) {
+                html += '      <span class="survey-meta-item">';
+                html += '        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 7V3M16 7V3M7 11H17M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                html += '        ' + survey.start_time + ' 至 ' + (survey.end_time || '长期有效');
+                html += '      </span>';
+            }
+            html += '    </div>';
+            html += '  </div>';
+
+            html += '  <div id="surveyQuestions">';
+            questions.forEach(function(q, qIndex) {
+                html += '  <div class="survey-question" data-question-id="' + q.id + '">';
+                var typeText = q.question_type === 'single' ? '单选' : (q.question_type === 'multiple' ? '多选' : '简答');
+                var typeClass = q.question_type;
+                html += '    <div class="question-text">';
+                html += '      <span class="question-type-badge ' + typeClass + '">' + typeText + '</span>';
+                html += '      <span>' + (qIndex + 1) + '. ' + htmlEscape(q.question_text) + '</span>';
+                if (q.is_required) {
+                    html += '      <span class="required">*</span>';
+                }
+                html += '    </div>';
+
+                if (q.question_type === 'single' || q.question_type === 'multiple') {
+                    html += '    <div class="options-list">';
+                    if (q.options) {
+                        q.options.forEach(function(opt) {
+                            var inputType = q.question_type === 'single' ? 'radio' : 'checkbox';
+                            html += '    <label class="option-item" data-option-id="' + opt.id + '">';
+                            html += '      <input type="' + inputType + '" name="question_' + q.id + '" value="' + opt.id + '" onchange="handleOptionChange(' + q.id + ', ' + opt.id + ', this)">';
+                            html += '      <span class="option-text">' + htmlEscape(opt.option_text) + '</span>';
+                            html += '    </label>';
+                        });
+                    }
+                    html += '    </div>';
+                } else {
+                    html += '    <textarea class="text-answer-input" id="text_answer_' + q.id + '" placeholder="请输入您的回答..." onchange="handleTextChange(' + q.id + ', this)"></textarea>';
+                }
+                html += '  </div>';
+            });
+            html += '  </div>';
+
+            html += '  <div class="survey-submit-area">';
+            html += '    <button class="btn btn-primary" id="submitSurveyBtn" onclick="submitSurvey()">';
+            html += '      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12H19M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            html += '      提交问卷';
+            html += '    </button>';
+            html += '  </div>';
+            html += '</div>';
+
+            container.innerHTML = html;
+
+            document.querySelectorAll('.option-item').forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    if (e.target.tagName !== 'INPUT') {
+                        var input = item.querySelector('input');
+                        input.checked = !input.checked;
+                        input.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+        }
+
+        window.handleOptionChange = function(questionId, optionId, input) {
+            var questionItem = document.querySelector('.survey-question[data-question-id="' + questionId + '"]');
+            if (input.type === 'radio') {
+                questionItem.querySelectorAll('.option-item').forEach(function(item) {
+                    item.classList.remove('selected');
+                });
+                if (input.checked) {
+                    input.closest('.option-item').classList.add('selected');
+                    surveyAnswers[questionId] = [optionId];
+                }
+            } else {
+                input.closest('.option-item').classList.toggle('selected', input.checked);
+                if (!surveyAnswers[questionId]) {
+                    surveyAnswers[questionId] = [];
+                }
+                var idx = surveyAnswers[questionId].indexOf(optionId);
+                if (input.checked && idx === -1) {
+                    surveyAnswers[questionId].push(optionId);
+                } else if (!input.checked && idx !== -1) {
+                    surveyAnswers[questionId].splice(idx, 1);
+                }
+            }
+        };
+
+        window.handleTextChange = function(questionId, textarea) {
+            surveyAnswers[questionId] = textarea.value.trim();
+        };
+
+        window.submitSurvey = function() {
+            if (isSurveySubmitted) {
+                alert('您已经提交过该问卷了');
+                return;
+            }
+
+            var questions = surveyData.questions;
+            var answers = [];
+
+            for (var i = 0; i < questions.length; i++) {
+                var q = questions[i];
+                var answer = surveyAnswers[q.id];
+
+                if (q.is_required) {
+                    if (!answer || (Array.isArray(answer) && answer.length === 0) || (typeof answer === 'string' && answer === '')) {
+                        alert('请完成第 ' + (i + 1) + ' 题：' + q.question_text);
+                        return;
+                    }
+                }
+
+                if (answer && (Array.isArray(answer) ? answer.length > 0 : answer !== '')) {
+                    if (q.question_type === 'text') {
+                        answers.push({
+                            question_id: q.id,
+                            answer_text: answer
+                        });
+                    } else {
+                        var optionIds = Array.isArray(answer) ? answer : [answer];
+                        optionIds.forEach(function(optId) {
+                            answers.push({
+                                question_id: q.id,
+                                option_id: optId
+                            });
+                        });
+                    }
+                }
+            }
+
+            if (answers.length === 0) {
+                alert('请至少回答一个问题');
+                return;
+            }
+
+            var btn = document.getElementById('submitSurveyBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border-width:2px;margin:0;"></div> 提交中...';
+
+            fetch('api_survey_submit.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    survey_id: SURVEY_ID,
+                    answers: answers
+                })
+            }).then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    isSurveySubmitted = true;
+                    renderSurveySubmitted();
+                } else {
+                    alert(data.message || '提交失败');
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12H19M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> 提交问卷';
+                }
+            }).catch(function() {
+                alert('网络错误，请稍后重试');
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12H19M12 5L19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> 提交问卷';
+            });
+        };
+
+        function htmlEscape(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         function loadQuestions(page) {
             page = page || 1;

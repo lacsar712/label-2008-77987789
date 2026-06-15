@@ -11,11 +11,11 @@
 <body>
     <?php
     require_once 'config.php';
+    ensureSurveyTables();
     
     $edit_mode = false;
     $notice = null;
     
-    // 检查是否为编辑模式
     if (isset($_GET['id'])) {
         $edit_mode = true;
         $id = intval($_GET['id']);
@@ -34,7 +34,17 @@
         }
     }
     
-    // 处理表单提交
+    $conn = getConnection();
+    $enabled_surveys = [];
+    $result = $conn->query("SELECT id, title FROM surveys WHERE is_enabled = 1 AND (start_time IS NULL OR start_time <= NOW()) AND (end_time IS NULL OR end_time >= NOW()) ORDER BY created_at DESC");
+    while ($row = $result->fetch_assoc()) {
+        $enabled_surveys[] = [
+            'id' => intval($row['id']),
+            'title' => htmlspecialchars($row['title'])
+        ];
+    }
+    closeConnection($conn);
+    
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $title = sanitize($_POST['title']);
         $content = sanitize($_POST['content']);
@@ -42,6 +52,7 @@
         $category = sanitize($_POST['category'] ?? '');
         $priority = sanitize($_POST['priority']);
         $status = sanitize($_POST['status']);
+        $survey_id = isset($_POST['survey_id']) && !empty($_POST['survey_id']) ? intval($_POST['survey_id']) : null;
         
         $conn = getConnection();
         $noticeId = 0;
@@ -60,8 +71,8 @@
                 $wasPublishedBefore = $old['status'] === 'published';
             }
 
-            $stmt = $conn->prepare("UPDATE notices SET title=?, content=?, author=?, category=?, priority=?, status=? WHERE id=?");
-            $stmt->bind_param("ssssssi", $title, $content, $author, $category, $priority, $status, $id);
+            $stmt = $conn->prepare("UPDATE notices SET title=?, content=?, author=?, category=?, priority=?, status=?, survey_id=? WHERE id=?");
+            $stmt->bind_param("ssssssii", $title, $content, $author, $category, $priority, $status, $survey_id, $id);
             
             if ($stmt->execute()) {
                 $success_message = "公告更新成功！";
@@ -73,8 +84,8 @@
             }
             $stmt->close();
         } else {
-            $stmt = $conn->prepare("INSERT INTO notices (title, content, author, category, priority, status) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssss", $title, $content, $author, $category, $priority, $status);
+            $stmt = $conn->prepare("INSERT INTO notices (title, content, author, category, priority, status, survey_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssssi", $title, $content, $author, $category, $priority, $status, $survey_id);
             
             if ($stmt->execute()) {
                 $noticeId = $conn->insert_id;
@@ -118,6 +129,8 @@
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_query.php">工单查询</a></li>
                 <li><a href="feedback_admin.php">反馈管理</a></li>
+                <li><a href="survey_admin.php">问卷管理</a></li>
+                <li><a href="survey_results.php">问卷结果</a></li>
                 <li><a href="subscription_admin.php">订阅管理</a></li>
                 <li><a href="push_records.php">推送记录</a></li>
                 <li><a href="system_backup.php">系统备份</a></li>
@@ -200,6 +213,18 @@
                             <select id="status" name="status" required>
                                 <option value="published" <?php echo ($edit_mode && $notice['status'] == 'published') ? 'selected' : ''; ?> <?php echo !$edit_mode ? 'selected' : ''; ?>>已发布</option>
                                 <option value="draft" <?php echo ($edit_mode && $notice['status'] == 'draft') ? 'selected' : ''; ?>>草稿</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="survey_id">关联问卷</label>
+                            <select id="survey_id" name="survey_id">
+                                <option value="">不关联问卷</option>
+                                <?php foreach ($enabled_surveys as $survey): ?>
+                                    <option value="<?php echo $survey['id']; ?>" <?php echo ($edit_mode && isset($notice['survey_id']) && $notice['survey_id'] == $survey['id']) ? 'selected' : ''; ?>>
+                                        <?php echo $survey['title']; ?>
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
