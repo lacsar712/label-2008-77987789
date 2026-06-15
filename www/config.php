@@ -182,8 +182,112 @@ function getBackupDir() {
     return $dir;
 }
 
+function ensureSubscriptionTables() {
+    $conn = getConnection();
+    $conn->query("CREATE TABLE IF NOT EXISTS subscriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        sub_type ENUM('category', 'author', 'keyword', 'priority') NOT NULL,
+        sub_value VARCHAR(255) NOT NULL,
+        is_paused TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_email (email),
+        INDEX idx_sub_type (sub_type),
+        INDEX idx_is_paused (is_paused)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS push_records (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        subscription_id INT NOT NULL,
+        notice_id INT NOT NULL,
+        summary VARCHAR(500) NOT NULL,
+        push_status ENUM('generated', 'sent', 'failed') DEFAULT 'generated',
+        pushed_at DATETIME DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_subscription_id (subscription_id),
+        INDEX idx_notice_id (notice_id),
+        INDEX idx_push_status (push_status),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (subscription_id) REFERENCES subscriptions(id) ON DELETE CASCADE,
+        FOREIGN KEY (notice_id) REFERENCES notices(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $result = $conn->query("SHOW COLUMNS FROM notices LIKE 'category'");
+    if ($result && $result->num_rows == 0) {
+        $conn->query("ALTER TABLE notices ADD COLUMN category VARCHAR(100) DEFAULT '' COMMENT '公告分类' AFTER author");
+        $conn->query("ALTER TABLE notices ADD INDEX idx_category (category)");
+    }
+
+    closeConnection($conn);
+}
+
 function getBackupTables() {
-    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records'];
+    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records', 'subscriptions', 'push_records'];
+}
+
+function matchSubscription($sub, $notice) {
+    $type = $sub['sub_type'];
+    $value = $sub['sub_value'];
+    switch ($type) {
+        case 'category':
+            return mb_strpos($notice['category'] ?? '', $value, 0, 'UTF-8') !== false;
+        case 'author':
+            return mb_strpos($notice['author'] ?? '', $value, 0, 'UTF-8') !== false;
+        case 'keyword':
+            return mb_strpos($notice['title'] ?? '', $value, 0, 'UTF-8') !== false
+                || mb_strpos($notice['content'] ?? '', $value, 0, 'UTF-8') !== false;
+        case 'priority':
+            return ($notice['priority'] ?? '') === $value;
+        default:
+            return false;
+    }
+}
+
+function generatePushRecordsForNotice($noticeId) {
+    $conn = getConnection();
+    $stmt = $conn->prepare("SELECT id, title, content, author, category, priority FROM notices WHERE id = ?");
+    $stmt->bind_param('i', $noticeId);
+    $stmt->execute();
+    $notice = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$notice) {
+        closeConnection($conn);
+        return 0;
+    }
+
+    $result = $conn->query("SELECT * FROM subscriptions WHERE is_paused = 0");
+    $subscriptions = [];
+    while ($row = $result->fetch_assoc()) {
+        $subscriptions[] = $row;
+    }
+
+    $summary = mb_substr(strip_tags($notice['content']), 0, 200, 'UTF-8');
+    $count = 0;
+
+    foreach ($subscriptions as $sub) {
+        if (matchSubscription($sub, $notice)) {
+            $check = $conn->prepare("SELECT id FROM push_records WHERE subscription_id = ? AND notice_id = ?");
+            $check->bind_param('ii', $sub['id'], $noticeId);
+            $check->execute();
+            $exists = $check->get_result()->fetch_assoc();
+            $check->close();
+
+            if (!$exists) {
+                $insert = $conn->prepare("INSERT INTO push_records (subscription_id, notice_id, summary, push_status, pushed_at) VALUES (?, ?, ?, 'generated', NULL)");
+                $insert->bind_param('iis', $sub['id'], $noticeId, $summary);
+                if ($insert->execute()) {
+                    $count++;
+                }
+                $insert->close();
+            }
+        }
+    }
+
+    closeConnection($conn);
+    return $count;
 }
 
 function formatBytes($bytes, $precision = 2) {

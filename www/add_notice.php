@@ -39,30 +39,49 @@
         $title = sanitize($_POST['title']);
         $content = sanitize($_POST['content']);
         $author = sanitize($_POST['author']);
+        $category = sanitize($_POST['category'] ?? '');
         $priority = sanitize($_POST['priority']);
         $status = sanitize($_POST['status']);
         
         $conn = getConnection();
-        
+        $noticeId = 0;
+        $wasPublishedBefore = false;
+        $triggerPush = false;
+
         if (isset($_POST['id']) && !empty($_POST['id'])) {
-            // 更新公告
             $id = intval($_POST['id']);
-            $stmt = $conn->prepare("UPDATE notices SET title=?, content=?, author=?, priority=?, status=? WHERE id=?");
-            $stmt->bind_param("sssssi", $title, $content, $author, $priority, $status, $id);
+            $noticeId = $id;
+            $chk = $conn->prepare("SELECT status FROM notices WHERE id = ?");
+            $chk->bind_param("i", $id);
+            $chk->execute();
+            $old = $chk->get_result()->fetch_assoc();
+            $chk->close();
+            if ($old) {
+                $wasPublishedBefore = $old['status'] === 'published';
+            }
+
+            $stmt = $conn->prepare("UPDATE notices SET title=?, content=?, author=?, category=?, priority=?, status=? WHERE id=?");
+            $stmt->bind_param("ssssssi", $title, $content, $author, $category, $priority, $status, $id);
             
             if ($stmt->execute()) {
                 $success_message = "公告更新成功！";
+                if (!$wasPublishedBefore && $status === 'published') {
+                    $triggerPush = true;
+                }
             } else {
                 $error_message = "更新失败: " . $conn->error;
             }
             $stmt->close();
         } else {
-            // 添加新公告
-            $stmt = $conn->prepare("INSERT INTO notices (title, content, author, priority, status) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssss", $title, $content, $author, $priority, $status);
+            $stmt = $conn->prepare("INSERT INTO notices (title, content, author, category, priority, status) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssss", $title, $content, $author, $category, $priority, $status);
             
             if ($stmt->execute()) {
+                $noticeId = $conn->insert_id;
                 $success_message = "公告添加成功！";
+                if ($status === 'published') {
+                    $triggerPush = true;
+                }
             } else {
                 $error_message = "添加失败: " . $conn->error;
             }
@@ -70,6 +89,14 @@
         }
         
         closeConnection($conn);
+
+        if ($triggerPush && $noticeId > 0) {
+            ensureSubscriptionTables();
+            $pushCount = generatePushRecordsForNotice($noticeId);
+            if ($pushCount > 0) {
+                $success_message .= " 已为 $pushCount 个订阅生成推送记录。";
+            }
+        }
     }
     ?>
     
@@ -91,6 +118,8 @@
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_query.php">工单查询</a></li>
                 <li><a href="feedback_admin.php">反馈管理</a></li>
+                <li><a href="subscription_admin.php">订阅管理</a></li>
+                <li><a href="push_records.php">推送记录</a></li>
                 <li><a href="system_backup.php">系统备份</a></li>
             </ul>
         </div>
@@ -148,6 +177,13 @@
                             <input type="text" id="author" name="author" required 
                                    value="<?php echo $edit_mode ? htmlspecialchars($notice['author']) : ''; ?>"
                                    placeholder="请输入发布人姓名">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="category">分类</label>
+                            <input type="text" id="category" name="category"
+                                   value="<?php echo $edit_mode ? htmlspecialchars($notice['category'] ?? '') : ''; ?>"
+                                   placeholder="如：系统公告、运维通知等">
                         </div>
 
                         <div class="form-group">

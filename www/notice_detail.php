@@ -491,6 +491,8 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
                 <li><a href="feedback_query.php">工单查询</a></li>
                 <li><a href="feedback_admin.php">反馈管理</a></li>
                 <li><a href="print_template_admin.php">打印模板</a></li>
+                <li><a href="subscription_admin.php">订阅管理</a></li>
+                <li><a href="push_records.php">推送记录</a></li>
                 <li><a href="system_backup.php">系统备份</a></li>
             </ul>
         </div>

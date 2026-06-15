@@ -13,25 +13,27 @@ CREATE TABLE IF NOT EXISTS notices (
     title VARCHAR(255) NOT NULL COMMENT '公告标题',
     content TEXT NOT NULL COMMENT '公告内容',
     author VARCHAR(100) NOT NULL COMMENT '发布人',
+    category VARCHAR(100) DEFAULT '' COMMENT '公告分类',
     publish_date DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
     update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     status ENUM('published', 'draft') DEFAULT 'published' COMMENT '状态',
     priority ENUM('high', 'medium', 'low') DEFAULT 'medium' COMMENT '优先级',
     views INT DEFAULT 0 COMMENT '浏览次数',
     INDEX idx_publish_date (publish_date),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_category (category)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 插入示例数据
-INSERT INTO notices (title, content, author, priority, status, publish_date) VALUES
-('欢迎使用公告信息管理系统', '这是一个功能完善的公告信息管理系统，支持添加、编辑、删除和查询公告信息。', '系统管理员', 'high', 'published', NOW()),
-('系统维护通知', '本系统将于本周六进行例行维护，维护时间为凌晨2:00-6:00，期间系统将暂停服务。', '技术部', 'high', 'published', NOW()),
-('新功能上线', '我们很高兴地宣布，系统新增了分页显示和高级搜索功能，欢迎体验！', '产品部', 'medium', 'published', DATE_SUB(NOW(), INTERVAL 1 DAY)),
-('安全提醒', '请各位用户定期修改密码，确保账户安全。如发现异常情况，请及时联系管理员。', '安全部', 'high', 'published', DATE_SUB(NOW(), INTERVAL 2 DAY)),
-('假期安排通知', '根据国家法定节假日安排，本系统将在春节期间正常运行，技术支持团队将保持在线。', '人事部', 'medium', 'published', DATE_SUB(NOW(), INTERVAL 3 DAY)),
-('用户调查问卷', '为了更好地改进我们的服务，诚邀您参与用户满意度调查，您的意见对我们非常重要。', '客服部', 'low', 'published', DATE_SUB(NOW(), INTERVAL 5 DAY)),
-('培训课程通知', '本月将举办系统使用培训课程，欢迎新用户报名参加，详情请查看培训中心。', '培训部', 'medium', 'published', DATE_SUB(NOW(), INTERVAL 7 DAY)),
-('版本更新说明', '系统已更新至v2.0版本，新增了数据导出、批量操作等功能，提升了系统性能。', '技术部', 'medium', 'published', DATE_SUB(NOW(), INTERVAL 10 DAY));
+INSERT INTO notices (title, content, author, category, priority, status, publish_date) VALUES
+('欢迎使用公告信息管理系统', '这是一个功能完善的公告信息管理系统，支持添加、编辑、删除和查询公告信息。', '系统管理员', '系统公告', 'high', 'published', NOW()),
+('系统维护通知', '本系统将于本周六进行例行维护，维护时间为凌晨2:00-6:00，期间系统将暂停服务。', '技术部', '运维通知', 'high', 'published', NOW()),
+('新功能上线', '我们很高兴地宣布，系统新增了分页显示和高级搜索功能，欢迎体验！', '产品部', '产品更新', 'medium', 'published', DATE_SUB(NOW(), INTERVAL 1 DAY)),
+('安全提醒', '请各位用户定期修改密码，确保账户安全。如发现异常情况，请及时联系管理员。', '安全部', '安全通知', 'high', 'published', DATE_SUB(NOW(), INTERVAL 2 DAY)),
+('假期安排通知', '根据国家法定节假日安排，本系统将在春节期间正常运行，技术支持团队将保持在线。', '人事部', '人事通知', 'medium', 'published', DATE_SUB(NOW(), INTERVAL 3 DAY)),
+('用户调查问卷', '为了更好地改进我们的服务，诚邀您参与用户满意度调查，您的意见对我们非常重要。', '客服部', '调查问卷', 'low', 'published', DATE_SUB(NOW(), INTERVAL 5 DAY)),
+('培训课程通知', '本月将举办系统使用培训课程，欢迎新用户报名参加，详情请查看培训中心。', '培训部', '培训通知', 'medium', 'published', DATE_SUB(NOW(), INTERVAL 7 DAY)),
+('版本更新说明', '系统已更新至v2.0版本，新增了数据导出、批量操作等功能，提升了系统性能。', '技术部', '产品更新', 'medium', 'published', DATE_SUB(NOW(), INTERVAL 10 DAY));
 
 -- 创建访客反馈表
 CREATE TABLE IF NOT EXISTS feedbacks (
@@ -144,3 +146,35 @@ CREATE TABLE IF NOT EXISTS backup_records (
     INDEX idx_backup_type (backup_type),
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据备份记录表';
+
+-- 创建订阅表
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL COMMENT '订阅人邮箱',
+    sub_type ENUM('category', 'author', 'keyword', 'priority') NOT NULL COMMENT '订阅类型：分类/作者/关键词/优先级',
+    sub_value VARCHAR(255) NOT NULL COMMENT '订阅值',
+    is_paused TINYINT(1) DEFAULT 0 COMMENT '是否暂停：0否，1是',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_email (email),
+    INDEX idx_sub_type (sub_type),
+    INDEX idx_is_paused (is_paused)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='公告订阅表';
+
+-- 创建推送记录表
+CREATE TABLE IF NOT EXISTS push_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    subscription_id INT NOT NULL COMMENT '订阅ID',
+    notice_id INT NOT NULL COMMENT '命中公告ID',
+    summary VARCHAR(500) NOT NULL COMMENT '推送内容摘要',
+    push_status ENUM('generated', 'sent', 'failed') DEFAULT 'generated' COMMENT '推送状态：generated已生成，sent已发送，failed失败',
+    pushed_at DATETIME DEFAULT NULL COMMENT '推送时间',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_subscription_id (subscription_id),
+    INDEX idx_notice_id (notice_id),
+    INDEX idx_push_status (push_status),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id) ON DELETE CASCADE,
+    FOREIGN KEY (notice_id) REFERENCES notices(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='推送记录表';
