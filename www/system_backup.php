@@ -371,6 +371,8 @@
                 <li><a href="subscription_admin.php">订阅管理</a></li>
                 <li><a href="push_records.php">推送记录</a></li>
                 <li><a href="system_backup.php" class="active">系统备份</a></li>
+                <li><a href="lottery_list.php">抽奖活动</a></li>
+                <li><a href="lottery_admin.php">抽奖管理</a></li>
             </ul>
         </div>
     </nav>

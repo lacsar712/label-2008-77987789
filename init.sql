@@ -305,3 +305,51 @@ CREATE TABLE IF NOT EXISTS notice_ratings (
     INDEX idx_created_at (created_at),
     FOREIGN KEY (notice_id) REFERENCES notices(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='公告评分评价表';
+
+-- 创建抽奖活动表
+CREATE TABLE IF NOT EXISTS lotteries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL COMMENT '活动名称',
+    notice_id INT DEFAULT NULL COMMENT '关联公告ID',
+    prizes JSON NOT NULL COMMENT '奖品列表JSON，格式：[{"name":"奖品名","count":数量},...]',
+    start_time DATETIME NOT NULL COMMENT '参与开始时间',
+    end_time DATETIME NOT NULL COMMENT '参与结束时间',
+    draw_time DATETIME NOT NULL COMMENT '开奖时间',
+    condition_text TEXT DEFAULT NULL COMMENT '参与条件描述',
+    status ENUM('draft', 'active', 'paused', 'finished') DEFAULT 'draft' COMMENT '状态：draft草稿，active进行中，paused已暂停，finished已开奖',
+    is_drawn TINYINT(1) DEFAULT 0 COMMENT '是否已开奖：0否，1是',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_status (status),
+    INDEX idx_notice_id (notice_id),
+    INDEX idx_start_time (start_time),
+    INDEX idx_draw_time (draw_time),
+    INDEX idx_is_drawn (is_drawn),
+    FOREIGN KEY (notice_id) REFERENCES notices(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='抽奖活动表';
+
+-- 创建抽奖参与表
+CREATE TABLE IF NOT EXISTS lottery_participants (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lottery_id INT NOT NULL COMMENT '活动ID',
+    visitor_id VARCHAR(255) NOT NULL COMMENT '访客标识（IP+UA哈希）',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '参与时间',
+    UNIQUE KEY uk_lottery_visitor (lottery_id, visitor_id),
+    INDEX idx_lottery_id (lottery_id),
+    INDEX idx_visitor_id (visitor_id),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (lottery_id) REFERENCES lotteries(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='抽奖参与表';
+
+-- 创建抽奖中奖表
+CREATE TABLE IF NOT EXISTS lottery_winners (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    lottery_id INT NOT NULL COMMENT '活动ID',
+    prize_name VARCHAR(255) NOT NULL COMMENT '奖品名',
+    visitor_id VARCHAR(255) NOT NULL COMMENT '中奖访客标识',
+    drawn_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '开奖时间',
+    INDEX idx_lottery_id (lottery_id),
+    INDEX idx_visitor_id (visitor_id),
+    INDEX idx_drawn_at (drawn_at),
+    FOREIGN KEY (lottery_id) REFERENCES lotteries(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='抽奖中奖表';

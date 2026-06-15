@@ -396,6 +396,8 @@ ensureSurveyTables();
                 <li><a href="feedback_admin.php">反馈管理</a></li>
                 <li><a href="survey_admin.php" class="active">问卷管理</a></li>
                 <li><a href="survey_results.php">问卷结果</a></li>
+                <li><a href="lottery_list.php">抽奖活动</a></li>
+                <li><a href="lottery_admin.php">抽奖管理</a></li>
                 <li><a href="system_backup.php">系统备份</a></li>
             </ul>
         </div>

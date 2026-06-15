@@ -696,6 +696,8 @@
                 <li><a href="qa_center.php">问答中心</a></li>
                 <li><a href="chat.php">在线答疑</a></li>
                 <li><a href="feedback.php">意见反馈</a></li>
+                <li><a href="lottery_list.php">抽奖活动</a></li>
+                <li><a href="lottery_admin.php">抽奖管理</a></li>
             </ul>
         </div>
     </nav>

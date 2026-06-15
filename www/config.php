@@ -367,8 +367,58 @@ function ensureRatingTables() {
     closeConnection($conn);
 }
 
+function ensureLotteryTables() {
+    $conn = getConnection();
+    $conn->query("CREATE TABLE IF NOT EXISTS lotteries (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        notice_id INT DEFAULT NULL,
+        prizes JSON NOT NULL,
+        start_time DATETIME NOT NULL,
+        end_time DATETIME NOT NULL,
+        draw_time DATETIME NOT NULL,
+        condition_text TEXT DEFAULT NULL,
+        status ENUM('draft', 'active', 'paused', 'finished') DEFAULT 'draft',
+        is_drawn TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_status (status),
+        INDEX idx_notice_id (notice_id),
+        INDEX idx_start_time (start_time),
+        INDEX idx_draw_time (draw_time),
+        INDEX idx_is_drawn (is_drawn),
+        FOREIGN KEY (notice_id) REFERENCES notices(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS lottery_participants (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        lottery_id INT NOT NULL,
+        visitor_id VARCHAR(255) NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_lottery_visitor (lottery_id, visitor_id),
+        INDEX idx_lottery_id (lottery_id),
+        INDEX idx_visitor_id (visitor_id),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (lottery_id) REFERENCES lotteries(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS lottery_winners (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        lottery_id INT NOT NULL,
+        prize_name VARCHAR(255) NOT NULL,
+        visitor_id VARCHAR(255) NOT NULL,
+        drawn_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_lottery_id (lottery_id),
+        INDEX idx_visitor_id (visitor_id),
+        INDEX idx_drawn_at (drawn_at),
+        FOREIGN KEY (lottery_id) REFERENCES lotteries(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    closeConnection($conn);
+}
+
 function getBackupTables() {
-    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records', 'subscriptions', 'push_records', 'surveys', 'survey_questions', 'survey_options', 'survey_answers', 'chat_rooms', 'chat_messages', 'chat_users_online', 'notice_ratings'];
+    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records', 'subscriptions', 'push_records', 'surveys', 'survey_questions', 'survey_options', 'survey_answers', 'chat_rooms', 'chat_messages', 'chat_users_online', 'notice_ratings', 'lotteries', 'lottery_participants', 'lottery_winners'];
 }
 
 function matchSubscription($sub, $notice) {
