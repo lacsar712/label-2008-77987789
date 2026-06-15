@@ -1,4 +1,22 @@
-<?php header('Content-Type: text/html; charset=UTF-8'); ?>
+<?php
+header('Content-Type: text/html; charset=UTF-8');
+require_once 'config.php';
+require_once 'controllers/NoticeControllers.php';
+require_once 'views/components/LayoutComponents.php';
+require_once 'views/components/NoticeComponents.php';
+
+$conn = getConnection();
+$controller = new HomeController($conn);
+$controller->noticeService->ensureIndexes();
+$data = $controller->handle();
+
+$stats = $data['stats'];
+$latestNotices = $data['latest_notices'];
+
+$navbar = new NavbarComponent('index.php');
+$footer = new FooterComponent();
+$cardRenderer = new NoticeCardComponent($controller->noticeService);
+?>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -9,82 +27,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- 导航栏 -->
-    <nav class="navbar">
-        <div class="container">
-            <div class="nav-brand">
-                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M7 7H17M7 12H17M7 17H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <h1>公告信息管理系统</h1>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="index.php" class="active">首页</a></li>
-                <li><a href="add_notice.php">添加公告</a></li>
-                <li><a href="search_notice.php">查询公告</a></li>
-                <li><a href="notice_calendar.php">公告日历</a></li>
-                <li><a href="qa_center.php">问答中心</a></li>
-                <li><a href="chat.php">在线答疑</a></li>
-                <li><a href="feedback.php">意见反馈</a></li>
-                <li><a href="feedback_query.php">工单查询</a></li>
-                <li><a href="feedback_admin.php">反馈管理</a></li>
-                <li><a href="survey_admin.php">问卷管理</a></li>
-                <li><a href="survey_results.php">问卷结果</a></li>
-                <li><a href="rating_admin.php">评价管理</a></li>
-                <li><a href="rating_summary.php">评价汇总</a></li>
-                <li><a href="subscription_admin.php">订阅管理</a></li>
-                <li><a href="push_records.php">推送记录</a></li>
-                <li><a href="lottery_list.php">抽奖活动</a></li>
-                <li><a href="lottery_admin.php">抽奖管理</a></li>
-                <li><a href="system_backup.php">系统备份</a></li>
-            </ul>
-        </div>
-    </nav>
+    <?php $navbar->render(); ?>
 
     <div class="container">
-
-        <!-- 主要内容 -->
         <div class="main-content">
-            <!-- 欢迎横幅 -->
             <div class="welcome-banner">
                 <div class="banner-content">
                     <h2>欢迎使用公告信息管理系统</h2>
                     <p>高效管理您的公告信息，让信息传递更加便捷</p>
                 </div>
                 <div class="banner-stats">
-                    <?php
-                    require_once 'config.php';
-                    $conn = getConnection();
-                    
-                    // 获取统计数据
-                    $total_result = $conn->query("SELECT COUNT(*) as total FROM notices");
-                    $total = $total_result->fetch_assoc()['total'];
-                    
-                    $today_result = $conn->query("SELECT COUNT(*) as today FROM notices WHERE DATE(publish_date) = CURDATE()");
-                    $today = $today_result->fetch_assoc()['today'];
-                    
-                    $views_result = $conn->query("SELECT SUM(views) as total_views FROM notices");
-                    $total_views = $views_result->fetch_assoc()['total_views'] ?? 0;
-                    
-                    closeConnection($conn);
-                    ?>
                     <div class="stat-item">
-                        <div class="stat-number"><?php echo $total; ?></div>
+                        <div class="stat-number"><?php echo $stats['total']; ?></div>
                         <div class="stat-label">总公告数</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number"><?php echo $today; ?></div>
+                        <div class="stat-number"><?php echo $stats['today']; ?></div>
                         <div class="stat-label">今日发布</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number"><?php echo $total_views; ?></div>
+                        <div class="stat-number"><?php echo $stats['total_views']; ?></div>
                         <div class="stat-label">总浏览量</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 快捷操作 -->
             <div class="quick-actions">
                 <h3>快捷操作</h3>
                 <div class="action-cards">
@@ -126,77 +93,19 @@
                 </div>
             </div>
 
-            <!-- 最新公告列表 -->
             <div class="recent-notices">
                 <div class="section-header">
                     <h3>最新公告</h3>
                     <a href="search_notice.php" class="view-all">查看全部 →</a>
                 </div>
                 <div class="notices-grid">
-                    <?php
-                    $conn = getConnection();
-                    $sql = "SELECT * FROM notices WHERE status = 'published' ORDER BY publish_date DESC LIMIT 6";
-                    $result = $conn->query($sql);
-                    
-                    if ($result->num_rows > 0) {
-                        while($row = $result->fetch_assoc()) {
-                            $priority_class = 'priority-' . $row['priority'];
-                            $priority_text = [
-                                'high' => '高',
-                                'medium' => '中',
-                                'low' => '低'
-                            ][$row['priority']];
-                            ?>
-                            <div class="notice-card" onclick="window.location.href='notice_detail.php?id=<?php echo $row['id']; ?>'" style="cursor:pointer;">
-                                <div class="notice-header">
-                                    <span class="priority-badge <?php echo $priority_class; ?>">
-                                        <?php echo $priority_text; ?>
-                                    </span>
-                                    <span class="notice-date">
-                                        <?php echo date('Y-m-d', strtotime($row['publish_date'])); ?>
-                                    </span>
-                                </div>
-                                <h4 class="notice-title"><?php echo htmlspecialchars($row['title']); ?></h4>
-                                <p class="notice-excerpt">
-                                    <?php 
-                                    $content = htmlspecialchars($row['content']);
-                                    echo mb_substr($content, 0, 80, 'UTF-8') . (mb_strlen($content, 'UTF-8') > 80 ? '...' : ''); 
-                                    ?>
-                                </p>
-                                <div class="notice-footer">
-                                    <span class="notice-author">
-                                        <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                        <?php echo htmlspecialchars($row['author']); ?>
-                                    </span>
-                                    <span class="notice-views">
-                                        <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            <path d="M2.45801 12C3.73201 7.943 7.52301 5 12.001 5C16.478 5 20.269 7.943 21.543 12C20.269 16.057 16.478 19 12.001 19C7.52301 19 3.73201 16.057 2.45801 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                        <?php echo $row['views']; ?>
-                                    </span>
-                                </div>
-                            </div>
-                            <?php
-                        }
-                    } else {
-                        echo '<p class="no-data">暂无公告信息</p>';
-                    }
-                    closeConnection($conn);
-                    ?>
+                    <?php $cardRenderer->renderGrid($latestNotices); ?>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 页脚 -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 公告信息管理系统. All rights reserved.</p>
-        </div>
-    </footer>
+    <?php $footer->render(); ?>
+    <?php closeConnection($conn); ?>
 </body>
 </html>

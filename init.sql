@@ -23,7 +23,10 @@ CREATE TABLE IF NOT EXISTS notices (
     INDEX idx_publish_date (publish_date),
     INDEX idx_status (status),
     INDEX idx_category (category),
-    INDEX idx_survey_id (survey_id)
+    INDEX idx_survey_id (survey_id),
+    INDEX idx_status_publish_date (status, publish_date),
+    INDEX idx_priority_publish_date (priority, publish_date),
+    INDEX idx_author_publish_date (author, publish_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 插入示例数据
