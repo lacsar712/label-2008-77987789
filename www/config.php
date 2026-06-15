@@ -347,8 +347,28 @@ function ensureSurveyTables() {
     closeConnection($conn);
 }
 
+function ensureRatingTables() {
+    $conn = getConnection();
+    $conn->query("CREATE TABLE IF NOT EXISTS notice_ratings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        notice_id INT NOT NULL,
+        visitor_id VARCHAR(255) NOT NULL,
+        score TINYINT(1) NOT NULL,
+        comment TEXT DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_notice_visitor (notice_id, visitor_id),
+        INDEX idx_notice_id (notice_id),
+        INDEX idx_visitor_id (visitor_id),
+        INDEX idx_score (score),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (notice_id) REFERENCES notices(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    closeConnection($conn);
+}
+
 function getBackupTables() {
-    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records', 'subscriptions', 'push_records', 'surveys', 'survey_questions', 'survey_options', 'survey_answers', 'chat_rooms', 'chat_messages', 'chat_users_online'];
+    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records', 'subscriptions', 'push_records', 'surveys', 'survey_questions', 'survey_options', 'survey_answers', 'chat_rooms', 'chat_messages', 'chat_users_online', 'notice_ratings'];
 }
 
 function matchSubscription($sub, $notice) {

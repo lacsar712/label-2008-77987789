@@ -288,3 +288,20 @@ CREATE TABLE IF NOT EXISTS chat_users_online (
     INDEX idx_last_heartbeat (last_heartbeat),
     FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天在线用户表';
+
+-- 创建公告评分表
+CREATE TABLE IF NOT EXISTS notice_ratings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    notice_id INT NOT NULL COMMENT '公告ID',
+    visitor_id VARCHAR(255) NOT NULL COMMENT '访客标识（IP+UA哈希）',
+    score TINYINT(1) NOT NULL COMMENT '评分1-5',
+    comment TEXT DEFAULT NULL COMMENT '文字评价',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY uk_notice_visitor (notice_id, visitor_id),
+    INDEX idx_notice_id (notice_id),
+    INDEX idx_visitor_id (visitor_id),
+    INDEX idx_score (score),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (notice_id) REFERENCES notices(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='公告评分评价表';

@@ -3,6 +3,7 @@ header('Content-Type: text/html; charset=UTF-8');
 require_once 'config.php';
 ensureQATables();
 ensureSurveyTables();
+ensureRatingTables();
 
 $notice_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 if ($notice_id <= 0) {
@@ -61,15 +62,103 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
             color: var(--text-primary);
             margin-bottom: var(--spacing-md);
             line-height: 1.4;
-            padding-right: 180px;
+            padding-right: 240px;
         }
         .detail-actions {
             position: absolute;
             top: var(--spacing-2xl);
             right: var(--spacing-2xl);
             display: flex;
+            flex-direction: column;
+            align-items: flex-end;
             gap: var(--spacing-sm);
             z-index: 10;
+        }
+        .detail-actions-btns {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+        .rating-widget {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            min-width: 220px;
+        }
+        .rating-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+        }
+        .rating-stars {
+            display: inline-flex;
+            gap: 4px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .rating-star {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.15s ease;
+        }
+        .rating-star:hover {
+            transform: scale(1.1);
+        }
+        .rating-star svg {
+            width: 100%;
+            height: 100%;
+        }
+        .rating-score {
+            display: inline-flex;
+            align-items: center;
+            margin-left: var(--spacing-sm);
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .rating-agg {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xs);
+            flex-wrap: wrap;
+        }
+        .rating-agg-score {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--warning-color);
+        }
+        .rating-agg-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .rating-comment {
+            margin-top: var(--spacing-sm);
+        }
+        .rating-comment textarea {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-md);
+            font-size: 0.8125rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 50px;
+            transition: all 0.2s ease;
+        }
+        .rating-comment textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .rating-save-hint {
+            font-size: 0.7rem;
+            color: var(--success-color);
+            margin-top: 4px;
+            min-height: 16px;
         }
         .detail-action-btn {
             display: inline-flex;
@@ -647,6 +736,11 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
             .detail-actions {
                 top: var(--spacing-md);
                 right: var(--spacing-md);
+                flex-direction: row;
+                align-items: flex-start;
+            }
+            .rating-widget {
+                display: none;
             }
             .detail-action-btn {
                 padding: 6px 10px;
@@ -686,6 +780,8 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
                 <li><a href="feedback_admin.php">反馈管理</a></li>
                 <li><a href="survey_admin.php">问卷管理</a></li>
                 <li><a href="survey_results.php">问卷结果</a></li>
+                <li><a href="rating_admin.php">评价管理</a></li>
+                <li><a href="rating_summary.php">评价汇总</a></li>
                 <li><a href="print_template_admin.php">打印模板</a></li>
                 <li><a href="subscription_admin.php">订阅管理</a></li>
                 <li><a href="push_records.php">推送记录</a></li>
@@ -706,14 +802,38 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
             <div class="detail-container">
                 <div class="detail-header">
                     <div class="detail-actions">
-                        <a href="print_preview.php?notice_id=<?php echo $notice_id; ?>" target="_blank" class="detail-action-btn" title="打印预览">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="6 9 6 2 18 2 18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="14" width="12" height="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>打印</span>
-                        </a>
-                        <a href="print_preview.php?notice_id=<?php echo $notice_id; ?>" target="_blank" class="detail-action-btn primary" title="下载PDF">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                            <span>PDF</span>
-                        </a>
+                        <div class="detail-actions-btns">
+                            <a href="print_preview.php?notice_id=<?php echo $notice_id; ?>" target="_blank" class="detail-action-btn" title="打印预览">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="6 9 6 2 18 2 18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="14" width="12" height="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <span>打印</span>
+                            </a>
+                            <a href="print_preview.php?notice_id=<?php echo $notice_id; ?>" target="_blank" class="detail-action-btn primary" title="下载PDF">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 10 12 15 17 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <span>PDF</span>
+                            </a>
+                        </div>
+                        <div class="rating-widget" id="ratingWidget">
+                            <div class="rating-title">公告评分</div>
+                            <div class="rating-agg">
+                                <span class="rating-agg-score" id="ratingAggScore">0.0</span>
+                                <span class="rating-agg-count" id="ratingAggCount">0 人评价</span>
+                            </div>
+                            <div class="rating-title">我的评分</div>
+                            <div>
+                                <div class="rating-stars" id="ratingStars">
+                                    <div class="rating-star" data-value="1"></div>
+                                    <div class="rating-star" data-value="2"></div>
+                                    <div class="rating-star" data-value="3"></div>
+                                    <div class="rating-star" data-value="4"></div>
+                                    <div class="rating-star" data-value="5"></div>
+                                </div>
+                                <span class="rating-score" id="ratingScoreDisplay">0 分</span>
+                            </div>
+                            <div class="rating-comment">
+                                <textarea id="ratingComment" placeholder="写下您的评价（可选）..."></textarea>
+                                <div class="rating-save-hint" id="ratingSaveHint"></div>
+                            </div>
+                        </div>
                     </div>
                     <h1><?php echo htmlspecialchars($notice['title']); ?></h1>
                     <div class="detail-meta">
@@ -1301,6 +1421,121 @@ $status_text = ['published' => '已发布', 'draft' => '草稿'][$notice['status
                 }
             });
         };
+
+        var ratingState = {
+            score: 0,
+            comment: '',
+            saveTimer: null,
+            hoverValue: 0
+        };
+
+        function getStarSVG(filled) {
+            var color = filled ? '#f59e0b' : '#475569';
+            var fill = filled ? '#f59e0b' : 'none';
+            return '<svg viewBox="0 0 24 24" fill="' + fill + '" xmlns="http://www.w3.org/2000/svg">' +
+                '<path d="M11.049 2.92698C11.3483 1.98867 12.6517 1.98867 12.951 2.92698L14.8534 8.87647C14.9863 9.29185 15.3776 9.5747 15.8156 9.5747H22.0523C23.0302 9.5747 23.4352 10.8261 22.6134 11.4267L17.6084 15.0714C17.2471 15.3345 17.096 15.8059 17.2093 16.2457L18.8641 22.6132C19.0971 23.5183 18.0282 24.2426 17.2272 23.7718L12.0461 20.7678C11.6731 20.5516 11.2069 20.5516 10.8339 20.7678L5.65276 23.7718C4.85181 24.2426 3.78285 23.5183 4.0159 22.6132L5.67065 16.2457C5.78396 15.8059 5.63283 15.3345 5.27158 15.0714L0.266548 11.4267C-0.555213 10.8261 -0.150201 9.5747 0.827703 9.5747H7.06439C7.5024 9.5747 7.89368 9.29185 8.02663 8.87647L11.049 2.92698Z" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+
+        function renderStars() {
+            var displayValue = ratingState.hoverValue > 0 ? ratingState.hoverValue : ratingState.score;
+            var stars = document.querySelectorAll('#ratingStars .rating-star');
+            stars.forEach(function(star) {
+                var value = parseInt(star.dataset.value);
+                star.innerHTML = getStarSVG(value <= displayValue);
+            });
+            document.getElementById('ratingScoreDisplay').textContent = ratingState.score + ' 分';
+        }
+
+        function showSaveHint(text, isError) {
+            var hint = document.getElementById('ratingSaveHint');
+            hint.textContent = text;
+            hint.style.color = isError ? 'var(--error-color)' : 'var(--success-color)';
+            setTimeout(function() {
+                if (hint.textContent === text) hint.textContent = '';
+            }, 2000);
+        }
+
+        function scheduleSave() {
+            if (ratingState.saveTimer) clearTimeout(ratingState.saveTimer);
+            ratingState.saveTimer = setTimeout(function() {
+                if (ratingState.score === 0) return;
+                fetch('api_notice_ratings.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'submit',
+                        notice_id: NOTICE_ID,
+                        score: ratingState.score,
+                        comment: ratingState.comment
+                    })
+                }).then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        showSaveHint(data.message, false);
+                        loadRatingAggregate();
+                    } else {
+                        showSaveHint(data.message || '保存失败', true);
+                    }
+                }).catch(function() {
+                    showSaveHint('网络错误，保存失败', true);
+                });
+            }, 500);
+        }
+
+        function loadMyRating() {
+            fetch('api_notice_ratings.php?action=my_rating&notice_id=' + NOTICE_ID)
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success && data.data) {
+                        ratingState.score = data.data.score;
+                        ratingState.comment = data.data.comment || '';
+                        document.getElementById('ratingComment').value = ratingState.comment;
+                        renderStars();
+                    }
+                });
+        }
+
+        function loadRatingAggregate() {
+            fetch('api_notice_ratings.php?action=aggregate&notice_id=' + NOTICE_ID)
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success && data.data) {
+                        document.getElementById('ratingAggScore').textContent = data.data.avg_score.toFixed(1);
+                        document.getElementById('ratingAggCount').textContent = data.data.total_count + ' 人评价';
+                    }
+                });
+        }
+
+        function initRating() {
+            document.querySelectorAll('#ratingStars .rating-star').forEach(function(star) {
+                star.addEventListener('mouseenter', function() {
+                    ratingState.hoverValue = parseInt(star.dataset.value);
+                    renderStars();
+                });
+                star.addEventListener('mouseleave', function() {
+                    ratingState.hoverValue = 0;
+                    renderStars();
+                });
+                star.addEventListener('click', function() {
+                    ratingState.score = parseInt(star.dataset.value);
+                    ratingState.hoverValue = 0;
+                    renderStars();
+                    scheduleSave();
+                });
+            });
+
+            var commentInput = document.getElementById('ratingComment');
+            commentInput.addEventListener('input', function() {
+                ratingState.comment = commentInput.value.trim();
+                if (ratingState.score > 0) scheduleSave();
+            });
+
+            renderStars();
+            loadMyRating();
+            loadRatingAggregate();
+        }
+
+        initRating();
     })();
     </script>
 </body>

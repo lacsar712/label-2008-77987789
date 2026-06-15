@@ -50,6 +50,8 @@
                 <li><a href="feedback_admin.php">反馈管理</a></li>
                 <li><a href="survey_admin.php">问卷管理</a></li>
                 <li><a href="survey_results.php">问卷结果</a></li>
+                <li><a href="rating_admin.php">评价管理</a></li>
+                <li><a href="rating_summary.php">评价汇总</a></li>
                 <li><a href="subscription_admin.php">订阅管理</a></li>
                 <li><a href="push_records.php" class="active">推送记录</a></li>
                 <li><a href="system_backup.php">系统备份</a></li>
