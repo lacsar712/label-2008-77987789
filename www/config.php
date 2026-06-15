@@ -229,6 +229,56 @@ function ensureSubscriptionTables() {
     closeConnection($conn);
 }
 
+function ensureChatTables() {
+    $conn = getConnection();
+    $conn->query("CREATE TABLE IF NOT EXISTS chat_rooms (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description VARCHAR(500) DEFAULT '',
+        is_default TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_is_default (is_default)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $result = $conn->query("SELECT COUNT(*) as cnt FROM chat_rooms WHERE is_default = 1");
+    $row = $result->fetch_assoc();
+    if ($row['cnt'] == 0) {
+        $conn->query("INSERT INTO chat_rooms (name, description, is_default) VALUES ('公共答疑大厅', '系统默认公共答疑房间，所有人进入后自动加入', 1)");
+    }
+
+    $conn->query("CREATE TABLE IF NOT EXISTS chat_messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        room_id INT NOT NULL,
+        nickname VARCHAR(100) NOT NULL,
+        user_identifier VARCHAR(255) NOT NULL,
+        message_type ENUM('text', 'image', 'system') NOT NULL DEFAULT 'text',
+        content TEXT NOT NULL,
+        mention_nickname VARCHAR(100) DEFAULT NULL,
+        is_admin TINYINT(1) DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_room_id (room_id),
+        INDEX idx_created_at (created_at),
+        INDEX idx_room_created (room_id, id),
+        FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $conn->query("CREATE TABLE IF NOT EXISTS chat_users_online (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        room_id INT NOT NULL,
+        nickname VARCHAR(100) NOT NULL,
+        user_identifier VARCHAR(255) NOT NULL,
+        is_admin TINYINT(1) DEFAULT 0,
+        last_heartbeat DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_room_user (room_id, user_identifier),
+        INDEX idx_room_id (room_id),
+        INDEX idx_last_heartbeat (last_heartbeat),
+        FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    closeConnection($conn);
+}
+
 function ensureSurveyTables() {
     $conn = getConnection();
 
@@ -298,7 +348,7 @@ function ensureSurveyTables() {
 }
 
 function getBackupTables() {
-    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records', 'subscriptions', 'push_records', 'surveys', 'survey_questions', 'survey_options', 'survey_answers'];
+    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records', 'subscriptions', 'push_records', 'surveys', 'survey_questions', 'survey_options', 'survey_answers', 'chat_rooms', 'chat_messages', 'chat_users_online'];
 }
 
 function matchSubscription($sub, $notice) {

@@ -242,3 +242,49 @@ CREATE TABLE IF NOT EXISTS survey_answers (
     FOREIGN KEY (question_id) REFERENCES survey_questions(id) ON DELETE CASCADE,
     FOREIGN KEY (option_id) REFERENCES survey_options(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='问卷答案表';
+
+-- 创建聊天房间表
+CREATE TABLE IF NOT EXISTS chat_rooms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL COMMENT '房间名称',
+    description VARCHAR(500) DEFAULT '' COMMENT '房间描述',
+    is_default TINYINT(1) DEFAULT 0 COMMENT '是否默认公共房间：0否，1是',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_is_default (is_default)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天房间表';
+
+-- 插入默认公共房间
+INSERT INTO chat_rooms (name, description, is_default) VALUES
+('公共答疑大厅', '系统默认公共答疑房间，所有人进入后自动加入', 1);
+
+-- 创建聊天消息表
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    room_id INT NOT NULL COMMENT '房间ID',
+    nickname VARCHAR(100) NOT NULL COMMENT '发送者昵称',
+    user_identifier VARCHAR(255) NOT NULL COMMENT '发送者标识（IP+UA哈希）',
+    message_type ENUM('text', 'image', 'system') NOT NULL DEFAULT 'text' COMMENT '消息类型：text文本，image图片，system系统消息',
+    content TEXT NOT NULL COMMENT '消息内容（文本/图片URL/系统消息）',
+    mention_nickname VARCHAR(100) DEFAULT NULL COMMENT '@提及的昵称',
+    is_admin TINYINT(1) DEFAULT 0 COMMENT '是否管理员消息：0否，1是',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+    INDEX idx_room_id (room_id),
+    INDEX idx_created_at (created_at),
+    INDEX idx_room_created (room_id, id),
+    FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';
+
+-- 创建聊天在线用户表
+CREATE TABLE IF NOT EXISTS chat_users_online (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    room_id INT NOT NULL COMMENT '房间ID',
+    nickname VARCHAR(100) NOT NULL COMMENT '用户昵称',
+    user_identifier VARCHAR(255) NOT NULL COMMENT '用户标识（IP+UA哈希）',
+    is_admin TINYINT(1) DEFAULT 0 COMMENT '是否管理员：0否，1是',
+    last_heartbeat DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后心跳时间',
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+    UNIQUE KEY uk_room_user (room_id, user_identifier),
+    INDEX idx_room_id (room_id),
+    INDEX idx_last_heartbeat (last_heartbeat),
+    FOREIGN KEY (room_id) REFERENCES chat_rooms(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天在线用户表';

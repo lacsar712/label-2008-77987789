@@ -694,6 +694,7 @@
                 <li><a href="search_notice.php">查询公告</a></li>
                 <li><a href="notice_calendar.php" class="active">公告日历</a></li>
                 <li><a href="qa_center.php">问答中心</a></li>
+                <li><a href="chat.php">在线答疑</a></li>
                 <li><a href="feedback.php">意见反馈</a></li>
             </ul>
         </div>

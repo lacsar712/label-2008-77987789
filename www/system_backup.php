@@ -361,6 +361,7 @@
                 <li><a href="add_notice.php">添加公告</a></li>
                 <li><a href="search_notice.php">查询公告</a></li>
                 <li><a href="qa_center.php">问答中心</a></li>
+                <li><a href="chat.php">在线答疑</a></li>
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_admin.php">反馈管理</a></li>
                 <li><a href="survey_admin.php">问卷管理</a></li>

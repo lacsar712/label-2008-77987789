@@ -25,6 +25,7 @@
                 <li><a href="search_notice.php">查询公告</a></li>
                 <li><a href="notice_calendar.php">公告日历</a></li>
                 <li><a href="qa_center.php">问答中心</a></li>
+                <li><a href="chat.php">在线答疑</a></li>
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_query.php">工单查询</a></li>
                 <li><a href="feedback_admin.php">反馈管理</a></li>
@@ -110,6 +111,13 @@
                         </svg>
                         <h4>问答中心</h4>
                         <p>浏览全站问答互动</p>
+                    </a>
+                    <a href="chat.php" class="action-card">
+                        <svg class="action-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h4>在线答疑</h4>
+                        <p>实时在线交流答疑</p>
                     </a>
                 </div>
             </div>
