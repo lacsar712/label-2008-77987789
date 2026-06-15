@@ -308,6 +308,7 @@
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_query.php">工单查询</a></li>
                 <li><a href="feedback_admin.php" class="active">反馈管理</a></li>
+                <li><a href="system_backup.php">系统备份</a></li>
             </ul>
         </div>
     </nav>

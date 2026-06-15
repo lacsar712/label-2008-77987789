@@ -127,3 +127,20 @@ INSERT INTO print_templates (name, header_text, footer_text, logo_url, style_jso
 ('极简风', '公告信息管理系统', '© 2024 公告信息管理系统. All rights reserved.', '', '{"fontFamily":"Noto Sans SC, sans-serif","fontSize":"14px","textColor":"#333","backgroundColor":"#fff","borderColor":"#e5e7eb","primaryColor":"#3b82f6","headerBgColor":"#f9fafb","footerBgColor":"#f9fafb"}', 1, 'minimal'),
 ('正式公文', '公 告', '发布单位：公告信息管理系统', '', '{"fontFamily":"SimSun, Noto Sans SC, sans-serif","fontSize":"16px","textColor":"#111","backgroundColor":"#fff","borderColor":"#333","primaryColor":"#1e40af","headerBgColor":"#fff","footerBgColor":"#fff","titleFontSize":"28px","titleAlign":"center","borderStyle":"double"}', 0, 'official'),
 ('卡片风', '', '感谢您的关注', '', '{"fontFamily":"Noto Sans SC, sans-serif","fontSize":"14px","textColor":"#374151","backgroundColor":"#f3f4f6","cardBgColor":"#fff","borderRadius":"12px","borderColor":"#e5e7eb","primaryColor":"#8b5cf6","shadow":"0 4px 6px -1px rgba(0,0,0,0.1)","padding":"24px"}', 0, 'card');
+
+-- 创建备份记录表
+CREATE TABLE IF NOT EXISTS backup_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL COMMENT '实际文件名',
+    display_name VARCHAR(255) NOT NULL COMMENT '显示名称',
+    file_size BIGINT NOT NULL DEFAULT 0 COMMENT '文件大小(字节)',
+    backup_type ENUM('manual', 'auto_pre_restore') NOT NULL DEFAULT 'manual' COMMENT '备份类型：manual手动, auto_pre_restore恢复前自动备份',
+    remark TEXT DEFAULT NULL COMMENT '备注',
+    status ENUM('success', 'failed', 'processing') NOT NULL DEFAULT 'success' COMMENT '状态',
+    error_log TEXT DEFAULT NULL COMMENT '错误日志',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_created_at (created_at),
+    INDEX idx_backup_type (backup_type),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据备份记录表';

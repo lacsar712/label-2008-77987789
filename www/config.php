@@ -153,4 +153,45 @@ function jsonResponse($data, $code = 200) {
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+function ensureBackupTables() {
+    $conn = getConnection();
+    $conn->query("CREATE TABLE IF NOT EXISTS backup_records (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL,
+        display_name VARCHAR(255) NOT NULL,
+        file_size BIGINT NOT NULL DEFAULT 0,
+        backup_type ENUM('manual', 'auto_pre_restore') NOT NULL DEFAULT 'manual',
+        remark TEXT DEFAULT NULL,
+        status ENUM('success', 'failed', 'processing') NOT NULL DEFAULT 'success',
+        error_log TEXT DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_created_at (created_at),
+        INDEX idx_backup_type (backup_type),
+        INDEX idx_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    closeConnection($conn);
+}
+
+function getBackupDir() {
+    $dir = __DIR__ . '/backups';
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    return $dir;
+}
+
+function getBackupTables() {
+    return ['notices', 'feedbacks', 'feedback_timeline', 'questions', 'answers', 'answer_likes', 'print_templates', 'backup_records'];
+}
+
+function formatBytes($bytes, $precision = 2) {
+    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    $bytes = max($bytes, 0);
+    $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+    $pow = min($pow, count($units) - 1);
+    $bytes /= (1 << (10 * $pow));
+    return round($bytes, $precision) . ' ' . $units[$pow];
+}
 ?>
