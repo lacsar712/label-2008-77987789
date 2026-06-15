@@ -8,6 +8,7 @@ services:
       - "2008:80"
     volumes:
       - ./www:/var/www/html
+      - ./.env:/var/www/.env:ro
     depends_on:
       - db
     networks:

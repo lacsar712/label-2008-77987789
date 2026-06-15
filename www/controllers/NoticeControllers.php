@@ -5,7 +5,7 @@ require_once __DIR__ . '/../services/NoticeService.php';
 abstract class BaseController
 {
     protected mysqli $conn;
-    protected NoticeService $noticeService;
+    public NoticeService $noticeService;
 
     public function __construct(mysqli $conn)
     {
