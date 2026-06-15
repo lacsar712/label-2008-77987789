@@ -1,0 +1,113 @@
+name: Notices Data Layer Tests
+
+on:
+  push:
+    paths:
+      - 'www/**/*.php'
+      - 'tests/**/*.php'
+      - 'init.sql'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - 'www/**/*.php'
+      - 'tests/**/*.php'
+      - 'init.sql'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+jobs:
+  data-layer-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root123
+          MYSQL_DATABASE: notice_test_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot123"
+          --health-interval=3s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mysqli, pdo, pdo_mysql
+          coverage: none
+
+      - name: Verify PHP and MySQL
+        run: |
+          php -v
+          php -m | grep -E 'mysqli|pdo'
+
+      - name: Run data layer tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASS: root123
+          TEST_DB_NAME: notice_test_db
+        run: |
+          cd tests
+          php run_tests.php
+
+      - name: Run tests with filter (schema)
+        if: always()
+        env:
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASS: root123
+          TEST_DB_NAME: notice_test_db
+        run: |
+          cd tests
+          php run_tests.php --filter=Schema
+
+  performance-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root123
+          MYSQL_DATABASE: notice_test_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot123"
+          --health-interval=3s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mysqli, pdo, pdo_mysql
+          coverage: none
+
+      - name: Run performance tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASS: root123
+          TEST_DB_NAME: notice_test_db
+          RUN_PERF_TESTS: '1'
+          PERF_TEST_RECORDS: '100000'
+          PERF_TIME_LIMIT: '5.0'
+        run: |
+          cd tests
+          php run_tests.php --filter=Fuzzy

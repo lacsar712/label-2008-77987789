@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  test_runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: notice_test_runner
+    environment:
+      DB_HOST: test_db
+      DB_USER: root
+      DB_PASS: root123
+      TEST_DB_NAME: notice_test_db
+      RUN_PERF_TESTS: ${RUN_PERF_TESTS:-0}
+      PERF_TEST_RECORDS: ${PERF_TEST_RECORDS:-10000}
+      PERF_TIME_LIMIT: ${PERF_TIME_LIMIT:-5.0}
+    volumes:
+      - ./tests:/var/www/tests
+    depends_on:
+      test_db:
+        condition: service_healthy
+    networks:
+      - test_network
+    command: ["php", "/var/www/tests/run_tests.php"]
+
+  test_db:
+    image: mysql:8.0
+    container_name: notice_test_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: notice_test_db
+    ports:
+      - "20084:3306"
+    networks:
+      - test_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+networks:
+  test_network:
+    driver: bridge
