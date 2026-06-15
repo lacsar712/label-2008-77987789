@@ -23,6 +23,7 @@
                 <li><a href="index.php" class="active">首页</a></li>
                 <li><a href="add_notice.php">添加公告</a></li>
                 <li><a href="search_notice.php">查询公告</a></li>
+                <li><a href="notice_calendar.php">公告日历</a></li>
                 <li><a href="qa_center.php">问答中心</a></li>
                 <li><a href="feedback.php">意见反馈</a></li>
                 <li><a href="feedback_query.php">工单查询</a></li>
@@ -95,6 +96,13 @@
                         </svg>
                         <h4>查询公告</h4>
                         <p>搜索和浏览公告</p>
+                    </a>
+                    <a href="notice_calendar.php" class="action-card">
+                        <svg class="action-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 7V3M16 7V3M7 11H17M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h4>公告日历</h4>
+                        <p>日历视图浏览公告</p>
                     </a>
                     <a href="qa_center.php" class="action-card">
                         <svg class="action-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
