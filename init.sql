@@ -17,11 +17,13 @@ CREATE TABLE IF NOT EXISTS notices (
     publish_date DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
     update_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     status ENUM('published', 'draft') DEFAULT 'published' COMMENT '状态',
+    survey_id INT DEFAULT NULL COMMENT '关联问卷ID',
     priority ENUM('high', 'medium', 'low') DEFAULT 'medium' COMMENT '优先级',
     views INT DEFAULT 0 COMMENT '浏览次数',
     INDEX idx_publish_date (publish_date),
     INDEX idx_status (status),
-    INDEX idx_category (category)
+    INDEX idx_category (category),
+    INDEX idx_survey_id (survey_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 插入示例数据
@@ -178,10 +180,6 @@ CREATE TABLE IF NOT EXISTS push_records (
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id) ON DELETE CASCADE,
     FOREIGN KEY (notice_id) REFERENCES notices(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='推送记录表';
-
--- 为公告表添加问卷关联字段
-ALTER TABLE notices ADD COLUMN IF NOT EXISTS survey_id INT DEFAULT NULL COMMENT '关联问卷ID' AFTER status;
-ALTER TABLE notices ADD INDEX IF NOT EXISTS idx_survey_id (survey_id);
 
 -- 创建问卷表
 CREATE TABLE IF NOT EXISTS surveys (
