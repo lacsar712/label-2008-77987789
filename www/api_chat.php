@@ -7,8 +7,8 @@ header('Content-Type: application/json; charset=UTF-8');
 $conn = getConnection();
 $userIdentifier = getUserIdentifier();
 
-define('CHAT_ADMIN_TOKEN', 'chat_admin_2024');
-define('CHAT_HEARTBEAT_TIMEOUT', 60);
+define('CHAT_ADMIN_TOKEN', env('CHAT_ADMIN_TOKEN', 'chat_admin_2024'));
+define('CHAT_HEARTBEAT_TIMEOUT', intval(env('CHAT_HEARTBEAT_TIMEOUT', '60')));
 
 $rawInput = file_get_contents('php://input');
 $data = json_decode($rawInput, true);

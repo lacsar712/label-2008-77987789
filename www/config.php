@@ -1,9 +1,37 @@
 <?php
-// 数据库配置
-define('DB_HOST', 'db');
-define('DB_USER', 'notice_user');
-define('DB_PASS', 'notice_pass');
-define('DB_NAME', 'notice_db');
+$_ENV_LOADED = [];
+function loadEnv() {
+    global $_ENV_LOADED;
+    if (!empty($_ENV_LOADED)) return;
+    $path = dirname(__DIR__) . '/.env';
+    if (!is_file($path)) return;
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || $line[0] === '#') continue;
+        $eq = strpos($line, '=');
+        if ($eq === false) continue;
+        $key = trim(substr($line, 0, $eq));
+        $val = trim(substr($line, $eq + 1));
+        if (strlen($val) >= 2 && (($val[0] === '"' && $val[strlen($val)-1] === '"') || ($val[0] === "'" && $val[strlen($val)-1] === "'"))) {
+            $val = substr($val, 1, -1);
+        }
+        $_ENV_LOADED[$key] = $val;
+        putenv("$key=$val");
+        $_ENV[$key] = $val;
+    }
+}
+function env(string $key, string $default = ''): string {
+    if (isset($_ENV_LOADED[$key])) return $_ENV_LOADED[$key];
+    $v = getenv($key);
+    return ($v !== false) ? $v : $default;
+}
+loadEnv();
+
+define('DB_HOST', env('DB_HOST', 'localhost'));
+define('DB_USER', env('DB_USER', 'root'));
+define('DB_PASS', env('DB_PASS', ''));
+define('DB_NAME', env('DB_NAME', 'notice_db'));
 
 // 创建数据库连接
 function getConnection() {
